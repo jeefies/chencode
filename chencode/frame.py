@@ -16,6 +16,7 @@ class MainMenu(tk.Menu):
         self.crt_items()
         root.config(menu = self)
         root.update()
+        root.bind_all('<Control-o>', self.op)
         #self.pack()
 
     def crt_items(self):
@@ -46,7 +47,7 @@ class MainMenu(tk.Menu):
         self.add_separator()
         self.add_cascade(label = 'Help', menu = helpmn)
 
-    def op(self):
+    def op(self, event = None):
         self._latest_fn = fn = tkfd.askopenfilename(title = 'Open The File', initialdir = os.getcwd())
         if not fn:
             msgbox.showwarning("No File Chosen!", "You cancled to choose a file!")
@@ -104,6 +105,9 @@ class MainMenu(tk.Menu):
         if me.fn is None:
             me.fn = fn
             note.add(me, opb(fn))
+        with open(fn, 'w') as f:
+            f.write(me.read())
+        msgbox.showinfo('Success!', 'Succeed in Saving The content into FILE %s' % fn)
 
     def usage(self):
         pass
@@ -133,13 +137,23 @@ class MainEditor(tk.Frame):
         except:
             msgbox.showwarning('Error Format', 'Not a Right format to decode')
             return
+        text = ''
+        for o in org:
+            if len(o) == 1:
+                text += o
+            else:
+                text += o + ' '
+        text = text.strip()
+
         self.text.delete('1.0', 'end')
-        self.text.insert('1.0', org)
+        self.text.insert('1.0', text)
 
     def encode(self):
         r = main.encode(self.text.get('1.0', 'end'))
-        print(r)
         return r
+
+    def read(self):
+        return self.text.get('1.0', 'end')
 
     @classmethod
     def getinstance(cls, name):
