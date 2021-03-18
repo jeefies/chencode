@@ -24,23 +24,33 @@ def punctuation(lt):
         return ord(lt)
     elif '\u3000' == lt:
         return 32
+    elif lt == '\u3002':
+        return 46
+    elif lt == '\u3001':
+        return 44
+    elif '\x20' <= lt <= '\x7e':
+        return ord(lt)
     return lt
 
 def _encode(py):
+    print(repr(py), len(py))
+    e = ''
     punc = punctuation(py)
-    if not punc == py:
+    if isinstance(punc, int):
         return '6{:o}'.format(punc)
     if len(py) == 1:
-        return '5' + yun[py]
+        try:
+            return '5' + yun[py]
+        except KeyError:
+            return '6%o' % ord(py)
     if py == 'hmg':
         return lts[py]
     if len(py) == 2:
         return lts[py]
     ft = lts[py[:2]] # first two code
-    e = ''
     if py.endswith('ng'):
         py = py[:-2]
-        e = '7'
+        e = '7' + e
     m = ''.join(yun[i] for i in py[2:])
     return ft + m + e
 
@@ -58,8 +68,8 @@ def ordlt(code):
     return ft
 
 def encode(string):
-    pys = pinyin(string, style=Style.NORMAL)
-    return '0'.join(_encode(i[0]) for i in pys)
+    py = lambda stri: pinyin(stri, style=Style.NORMAL)[0]
+    return '0'.join(_encode(i[0]) for i in map(py, string))
 
 def decode(codes):
     return ' '.join(ordlt(code) for code in codes.split('0'))
