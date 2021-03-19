@@ -94,3 +94,4 @@ if __name__ == '__main__':
     code = encode('你好啊上班,组')
     print(code)
     print(decode(code))
+

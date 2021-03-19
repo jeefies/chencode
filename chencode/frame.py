@@ -1,10 +1,13 @@
-import main
+from . import main
 import os
 import time
+import codecs
+import chardet
 import tkinter as tk
 from tkinter import ttk
 import tkinter.filedialog as tkfd
 import tkinter.messagebox as msgbox
+from tkinter.scrolledtext import ScrolledText as SText
 
 
 opb = os.path.basename
@@ -17,24 +20,29 @@ class MainMenu(tk.Menu):
         root.config(menu = self)
         root.update()
         root.bind_all('<Control-o>', self.op)
-        #self.pack()
+        root.bind_all('<Control-O>', self.op)
+        root.bind_all('<Control-n>', self.new)
+        root.bind_all('<Control-N>', self.new)
+        root.bind_all('<Control-Shift-Q>', lambda e: self.master.destroy())
+        root.bind_all('<Control-Shift-q>', lambda e: self.master.destroy())
 
     def crt_items(self):
         self.filemn = filemn = tk.Menu(self, tearoff=0, bg='white', activebackground='red', bd=2)
         ac = filemn.add_command
-        ac(label = 'Open', command = self.op)
-        ac(label = "New", command = self.new)
+        ac(label = 'Open', command = self.op, accelerator = 'Ctrl+o')
+        ac(label = "New", command = self.new, accelerator = 'Ctrl+n')
         filemn.add_separator()
-        ac(label = 'Save', command = self.save, state = 'disabled')
-        ac(label = 'Reopen', command = self.reo, state = 'disabled')
+        ac(label = 'Save', command = self.save, state = 'disabled', accelerator = 'Ctrl+s')
+        ac(label = 'Save As', command = self.saveas, state = 'disabled', accelerator = 'Ctrl+Shift+s')
+        ac(label = 'Reopen', command = self.reo, state = 'disabled', accelerator = 'Ctrl+r')
         filemn.add_separator()
-        ac(label = 'Close', command = self.close, state = 'disabled')
-        ac(label = 'Exit', command = self.master.destroy)
+        ac(label = 'Close', command = self.close, state = 'disabled', accelerator = 'Ctrl+q')
+        ac(label = 'Exit', command = self.master.destroy, accelerator = 'Ctrl+Shift+q')
 
         self.operationmn = operations = tk.Menu(self, tearoff=0, bg= 'white', activebackground = 'red', bd=2)
         ac = operations.add_command
-        ac(label = 'Decode', command = self.de, state = 'disabled')
-        ac(label = 'Encode', command = self.en, state = 'disabled')
+        ac(label = 'Decode', command = self.de, state = 'disabled', accelerator = 'Ctrl+d')
+        ac(label = 'Encode', command = self.en, state = 'disabled', accelerator = 'Ctrl+e')
 
         helpmn = tk.Menu(self, tearoff = 0, bg='white', activebackground='red', bd=2)
         ac = helpmn.add_command
@@ -52,27 +60,31 @@ class MainMenu(tk.Menu):
         if not fn:
             msgbox.showwarning("No File Chosen!", "You cancled to choose a file!")
             return
-        with open(fn,'r') as f:
+        with codecs.open(fn,'rb') as f:
             org = f.read()
+        encoding = chardet.detect(org)['encoding']
+        org = codecs.decode(org, encoding)
         me = MainEditor(org, fn = fn)
         note.add(me, opb(fn))
         note.select(me)
         self.filemn.entryconfigure(3, state = 'normal')
         self.filemn.entryconfigure(4, state = 'normal')
-        self.filemn.entryconfigure(6, state = 'normal')
+        self.filemn.entryconfigure(5, state = 'normal')
+        self.filemn.entryconfigure(7, state = 'normal')
         self.operationmn.entryconfigure(0, state = 'normal')
         self.operationmn.entryconfigure(1, state = 'normal')
 
-    def new(self):
+    def new(self, event = None):
         me = MainEditor('', fn = None)
         note.add(me, 'new')
         note.select(me)
         self.filemn.entryconfigure(3, state = 'normal')
-        self.filemn.entryconfigure(6, state = 'normal')
+        self.filemn.entryconfigure(5, state = 'normal')
+        self.filemn.entryconfigure(7, state = 'normal')
         self.operationmn.entryconfigure(0, state = 'normal')
         self.operationmn.entryconfigure(1, state = 'normal')
 
-    def close(self):
+    def close(self, event = None):
         selected = note.select()
         if selected:
             note.forget(selected)
@@ -81,31 +93,45 @@ class MainMenu(tk.Menu):
                 return
         self.filemn.entryconfigure(3, state = 'disabled')
         self.filemn.entryconfigure(4, state = 'disabled')
-        self.filemn.entryconfigure(6, state = 'disabled')
+        self.filemn.entryconfigure(5, state = 'disabled')
+        self.filemn.entryconfigure(7, state = 'disabled')
         self.operationmn.entryconfigure(0, state = 'disabled')
         self.operationmn.entryconfigure(1, state = 'disabled')
 
-    def reo(self):
+    def reo(self, event = None):
         me = note.iselect()
         if not me:
             return
-        with open(me.fn, 'r') as f:
+        with codecs.open(me.fn,'rb') as f:
             org = f.read()
+        encoding = chardet.detect(org)['encoding']
+        org = codecs.decode(org, encoding)
+        me.set(org)
 
-    def de(self):
+    def de(self, event = None):
         note.iselect().decode()
 
-    def en(self):
+    def en(self, event = None):
         content = note.iselect().encode()
         TopShow(content)
 
-    def save(self):
+    def save(self, event = None):
+        me = note.iselect()
+        if me.fn is None:
+            self.saveas()
+        with codecs.open(me.fn, 'w') as f:
+            f.write(me.read())
+
+
+    def saveas(self, event = None):
         fn = tkfd.asksaveasfilename(title = 'Save to The File', initialdir = os.getcwd())
+        if not fn:
+            return msgbox.showwarning('No File chosen', 'You Cancled to save the CONTENT!')
         me = note.iselect()
         if me.fn is None:
             me.fn = fn
             note.add(me, opb(fn))
-        with open(fn, 'w') as f:
+        with codecs.open(fn, 'w') as f:
             f.write(me.read())
         msgbox.showinfo('Success!', 'Succeed in Saving The content into FILE %s' % fn)
 
@@ -118,16 +144,29 @@ class MainMenu(tk.Menu):
 
 class MainEditor(tk.Frame):
     _instance = {}
+    _fns = {}
+
+    def __new__(self, content, fn = 'new'):
+        self.exists = False
+        if fn in self._fns:
+            self.exists = True
+            return self._fns[fn]
+        r = super().__new__(self)
+        self._fns[fn] = r
+        return r
 
     def __init__(self, content, fn = 'new'):
-        super().__init__(note)
-        self.crt_items(content)
-        self.fn = fn
-        self._instance[str(self)] = self
+        if not self.exists:
+            super().__init__(note)
+            self.crt_items(content)
+            self.fn = fn
+            self._instance[str(self)] = self
+            self.binds()
 
 
     def crt_items(self, content):
-        self.text = text = tk.Text(self)
+        self.content = content
+        self.text = text = SText(self)
         text.insert('1.0', content)
         text.place(relwidth = 0.98, relheight = 0.98, relx = 0.01, rely = 0.01)
 
@@ -144,16 +183,56 @@ class MainEditor(tk.Frame):
             else:
                 text += o + ' '
         text = text.strip()
-
-        self.text.delete('1.0', 'end')
-        self.text.insert('1.0', text)
+        self.set(text)
 
     def encode(self):
         r = main.encode(self.text.get('1.0', 'end'))
         return r
 
+    def set(self, content):
+        self.text.delete('1.0', 'end')
+        self.text.insert('1.0', content)
+
     def read(self):
         return self.text.get('1.0', 'end')
+
+    @property
+    def changed(self):
+        return self.content == self.read()
+
+    def binds(self):
+        self.bind_all('<Control-A>', self.selectAll)
+        self.bind_all('<Control-C>', self.copy)
+        self.bind_all('<Control-V>', self.paste)
+        self.bind_all('<Control-Q>', mainmenu.close)
+        self.bind_all('<Control-S>', mainmenu.save)
+        self.bind_all('<Control-E>', mainmenu.en)
+        self.bind_all('<Control-D>', mainmenu.de)
+        self.bind_all('<Control-Shift-S>', mainmenu.saveas)
+        self.bind_all('<Control-a>', self.selectAll)
+        self.bind_all('<Control-c>', self.copy)
+        self.bind_all('<Control-v>', self.paste)
+        self.bind_all('<Control-q>', mainmenu.close)
+        self.bind_all('<Control-s>', mainmenu.save)
+        self.bind_all('<Control-e>', mainmenu.en)
+        self.bind_all('<Control-d>', mainmenu.de)
+        self.bind_all('<Control-Shift-s>', mainmenu.saveas)
+
+    def selectAll(self, event):
+        self.text.tag_add('sel', '1.0', 'end')
+
+    def copy(self, event):
+        try:
+            select = self.text.get(tk.SEL_FIRST, tk.SEL_LAST)
+        except tk.TclError:
+            return
+        root.clipboard_clear()
+        root.clipboard_append(select)
+        root.update()
+
+    def paste(self, event):
+        text = root.clipboard_get()
+        #self.text.insert('insert', text)
 
     @classmethod
     def getinstance(cls, name):
@@ -168,6 +247,9 @@ class MainNote(ttk.Notebook):
         self.cid = 0
 
     def add(self, frame, text, **kwargs):
+        if getattr(frame, 'exists', None):
+            print('exists')
+            return
         super().add(frame, text = text)
         self.update()
         cid = self.cid
@@ -181,7 +263,7 @@ def TopShow(content):
     top = tk.Toplevel()
     top.geometry('300x300')
     top.resizable(0,0)
-    text = tk.Text(top)
+    text = SText(top)
     text.insert('1.0', content)
     text['state'] = 'disabled'
 
@@ -200,9 +282,12 @@ def TopShow(content):
     #top.mainloop()
 
 
-root = tk.Tk()
-root.title()
-root.geometry('600x300')
-mainmenu = MainMenu()
-note = MainNote()
-root.mainloop()
+def _main():
+    global root, mainmenu, note
+    root = tk.Tk()
+    wins = root.winfo_screenwidth(), root.winfo_screenheight()
+    root.title('Diary Coder')
+    root.geometry('600x300+{}+{}'.format(wins[0] // 2 - 300, wins[1] // 2 - 150))
+    mainmenu = MainMenu()
+    note = MainNote()
+    root.mainloop()
