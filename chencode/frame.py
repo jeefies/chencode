@@ -3,6 +3,7 @@ import os
 import time
 import codecs
 import chardet
+from PIL import Image, ImageTk
 import tkinter as tk
 from tkinter import ttk
 import tkinter.filedialog as tkfd
@@ -11,20 +12,26 @@ from tkinter.scrolledtext import ScrolledText as SText
 
 
 opb = os.path.basename
+imgpath = os.path.join(os.path.dirname(__file__), \
+        'favicon.jpg')
 
 class MainMenu(tk.Menu):
     def __init__(self):
         super().__init__(root, bg='white', activebackground='red', bd=2)
 
         self.crt_items()
-        root.config(menu = self)
-        root.update()
         root.bind_all('<Control-o>', self.op)
         root.bind_all('<Control-O>', self.op)
+        root.bind_all('<Control-h>', self.details)
+        root.bind_all('<Control-H>', self.details)
         root.bind_all('<Control-n>', self.new)
+        root.bind_all('<Control-Shift-a>', self.about)
+        root.bind_all('<Control-Shift-A>', self.about)
         root.bind_all('<Control-N>', self.new)
         root.bind_all('<Control-Shift-Q>', lambda e: self.master.destroy())
         root.bind_all('<Control-Shift-q>', lambda e: self.master.destroy())
+        self.img = ImageTk.PhotoImage(Image.open(imgpath).resize((128, 128)))
+        root.config(menu = self)
 
     def crt_items(self):
         self.filemn = filemn = tk.Menu(self, tearoff=0, bg='white', activebackground='red', bd=2)
@@ -46,8 +53,8 @@ class MainMenu(tk.Menu):
 
         helpmn = tk.Menu(self, tearoff = 0, bg='white', activebackground='red', bd=2)
         ac = helpmn.add_command
-        ac(label = 'Usage', command = self.usage)
-        ac(label = 'Details', command = self.details)
+        ac(label = 'About', command = self.about, accelerator = "Ctrl+Shift+a")
+        ac(label = 'Details', command = self.details, accelerator = "Ctrl+h")
 
         self.add_cascade(label = 'File', menu = filemn)
         self.add_separator()
@@ -135,11 +142,24 @@ class MainMenu(tk.Menu):
             f.write(me.read())
         msgbox.showinfo('Success!', 'Succeed in Saving The content into FILE %s' % fn)
 
-    def usage(self):
-        pass
+    def about(self, event = None):
+        top = tk.Toplevel()
+        top.columnconfigure(0, weight = 3)
+        top.rowconfigure(0, weight = 2)
+        tk.Label(top, image = self.img).grid(row = 0, column = 0)
+        for i, text in enumerate(self._about):
+            tk.Label(top, text = text).grid(row = i + 1, column = 0)
 
-    def details(self):
-        pass
+        top.resizable(0, 0)
+
+    _about = ("Powered by PYTHON3 - Tkinter",
+            "Author: Jeef Coroutine Fu from Chengdu, China",
+            "report at jeefy163@163.com or jeefyol@outlook.com",
+            "Thank you for using this!"
+            )
+
+    def details(self, event = None):
+        __import__('webbrowser').open('https://jeefy.herukuapp.com/docs/chencode/diary-encoder')
 
 
 class MainEditor(tk.Frame):
@@ -233,6 +253,7 @@ class MainEditor(tk.Frame):
     def paste(self, event):
         text = root.clipboard_get()
         #self.text.insert('insert', text)
+        self.text.delete(tk.SEL_FIRST, tk.SEL_LAST)
 
     @classmethod
     def getinstance(cls, name):
@@ -248,7 +269,6 @@ class MainNote(ttk.Notebook):
 
     def add(self, frame, text, **kwargs):
         if getattr(frame, 'exists', None):
-            print('exists')
             return
         super().add(frame, text = text)
         self.update()
@@ -267,6 +287,20 @@ def TopShow(content):
     text.insert('1.0', content)
     text['state'] = 'disabled'
 
+    def copy(event):
+        t = text.get(tk.SEL_FIRST, tk.SEL_LAST)
+        root.clipboard_clear()
+        root.clipboard_append(t)
+        root.update()
+    
+    def selectAll(event):
+        text.tag_add('sel', '1.0', 'end')
+
+    top.bind_all('<Control-a>', selectAll)
+    top.bind_all('<Control-c>', copy)
+    top.bind_all('<Control-A>', selectAll)
+    top.bind_all('<Control-C>', copy)
+
     def saveinto():
         fn = tkfd.asksaveasfilename(initialdir = os.getcwd())
         if not fn:
@@ -280,7 +314,6 @@ def TopShow(content):
     btn.pack(side = tk.BOTTOM, fill = 'y')
     text.pack(side = tk.TOP)
     #top.mainloop()
-
 
 def _main():
     global root, mainmenu, note

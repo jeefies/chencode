@@ -31,6 +31,7 @@ def punctuation(lt):
     return lt
 
 def _encode(py):
+    py = py.lower()
     e = ''
     punc = punctuation(py)
     if isinstance(punc, int):
