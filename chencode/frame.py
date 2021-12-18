@@ -311,11 +311,15 @@ class MainEditor(tk.Frame):
 
     def decode(self):
         "Decode the codes and rewrite the content into the result"
+        org = main.decode(self.text.get('1.0', 'end').strip())
+        """
         try:
             org = main.decode(self.text.get('1.0', 'end'))
-        except:
-            msgbox.showwarning('Error Format', 'Not a Right format to decode')
+        except main.DecodeError as e:
+            msgbox.showwarning('Error Format', 'Not a Right format to decode %s' % e.args[1])
+            print(e)
             return
+        """
         # notice that org is a tuple (can not just insert into the Text widget)
         # so use a text simply change into a well-looked text
         text = ''

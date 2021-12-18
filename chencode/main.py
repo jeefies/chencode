@@ -20,6 +20,7 @@ def chrlt(lt):
 def punctuation(lt):
     """Check if the letter is a punctuation"""
     #Chinese in 4e00 - 9fef
+    # 检查是否为符号，中文符号将转为半角
     if '\uff01' <= lt <= '\uff5e':
         return ord(lt) - 65248
     elif '\u3000' == lt:
@@ -35,30 +36,40 @@ def punctuation(lt):
 # encode one letter, only one (has changed to pinyin)
 def _encode(py):
     "Encode one letter which has changed to pinyin already"
+    # 编码一个字符，产生一个8进制数，此种，8为0
     py = py.lower()
     e = ''
     punc = punctuation(py)
+    # 符号以6开头
     if isinstance(punc, int):
         r = '6{:o}'.format(punc).replace('0', '8')
         return r
 
+    # 如果为数字，则直接返回数字
     if py in digits:
         return py
 
+    # 如果拼音只有一个，则直接从列表里返回对应值
+    # 如果是单个英文字符，也是
     if len(py) == 1:
         return letters[py]
 
+    # 处理特殊的音符
     if py == 'hmg':
         return lts[py]
 
+    # 前两个字符可以直接匹配
     if len(py) == 2:
         return lts[py]
+    # 后面的字符就在前面的基础上叠加
     ft = lts[py[:2]] # first two code
 
+    # ng是特殊的音节，只占一位数字
     if py.endswith('ng'):
         py = py[:-2]
-        e = '7' + e
+        e = '7'
 
+    # 处理中间的拼音，至多3个
     m = ''.join(yun[i] for i in py[2:])
     return ft + m + e
 
@@ -83,21 +94,27 @@ def ordlt(code):
         return r
 
     # single number
+    # 单个数字
     if len(code) == 1:
         return code
 
     # single letter(Eng letters)
+    # 单个字母或者是单个拼音
     if len(code) == 2:
         return bletters[code]
 
+    # 获取到所在的拼音表
     li = nums[int(code[0]) - 1]
+    # 归递获取前两位拼音
     for c in code[1:3]:
         li = li[int(c) - 1]
     ft = li
 
+    # 若是只有两个，则直接返回
     if len(code) == 3:
         return ft
 
+    # 将剩下的加入其中
     for c in code[3:]:
         ft += yunb[c]
     return ft
