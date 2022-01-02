@@ -18,6 +18,10 @@ Notice that the Chinese punctuations would change to English punctuations.
 The specials letters will convert into unicode number, and then save as the code starts with '6'.  
 The followed codes are the number based on base 8 (0 -> 8).  
 
+## Notice
+It's not wise to encode a numeric str!
+It will be 4 times longer!
+
 ## GUI
 **The gui can be opened with `python -m chencode`**  
 Remember you should call it under the readme file folder.  

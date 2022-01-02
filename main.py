@@ -10,7 +10,7 @@ from pypinyin import pinyin, Style
 
 
 # Eng punctuation and whitespaces
-sws = spuncs + whitespace
+sws = spuncs + whitespace + digits
 
 
 def chrlt(lt):
