@@ -12,7 +12,7 @@ sws = spuncs + whitespace
 
 def chrlt(lt):
     "Encode one letter"
-    py = pinyin(lt, style=Style.NORMAL)[0][0]
+    py = pinyin(lt, style=Style.TONE3)[0][0]
     if py == lt:
         return '6{:o}'.format(punctuation(lt))
     return _encode(py)
@@ -55,12 +55,15 @@ def _encode(py):
         return letters[py]
 
     # 处理特殊的音符
-    if py == 'hmg':
+    if py[:3] == 'hmg':
         return lts[py]
 
+    print(py)
+    tone = py[-1]
+    py = py[:-1]
     # 前两个字符可以直接匹配
     if len(py) == 2:
-        return lts[py]
+        return lts[py] + tone
     # 后面的字符就在前面的基础上叠加
     ft = lts[py[:2]] # first two code
 
@@ -71,7 +74,7 @@ def _encode(py):
 
     # 处理中间的拼音，至多3个
     m = ''.join(yun[i] for i in py[2:])
-    return ft + m + e
+    return ft + m + e + tone
 
 # The function to show where the error is raised (which code)
 def witherror(func):
@@ -88,6 +91,7 @@ def witherror(func):
 @witherror
 def ordlt(code):
     "Decode one letter's code"
+    print(code)
     # utf-8 letters
     if code.startswith('6'):
         r = chr(int(code[1:].replace('8', '0'), base=8))
@@ -100,6 +104,8 @@ def ordlt(code):
 
     # single letter(Eng letters)
     # 单个字母或者是单个拼音
+    tone = code[-1]
+    code = code[:-1]
     if len(code) == 2:
         return bletters[code]
 
@@ -112,17 +118,17 @@ def ordlt(code):
 
     # 若是只有两个，则直接返回
     if len(code) == 3:
-        return ft
+        return ft + tone
 
     # 将剩下的加入其中
     for c in code[3:]:
         ft += yunb[c]
-    return ft
+    return ft + tone
 
 
 def encode(string):
     "Encode a string, a few letters (Eng letters, Chinese words, numbers)"
-    py = lambda stri: pinyin(stri, style=Style.NORMAL)[0]
+    py = lambda stri: pinyin(stri, style=Style.TONE3)[0]
     return '0'.join(_encode(i[0]) for i in map(py, string))
 
 def decode(codes):
