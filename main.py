@@ -1,4 +1,7 @@
-from .lts import lts, nums, letters, bletters, yun, yunb
+try:
+    from .lts import lts, nums, letters, bletters, yun, yunb
+except ImportError:
+    from lts import lts, nums, letters, bletters, yun, yunb
 from string import punctuation as spuncs
 from string import whitespace, digits
 from functools import wraps
@@ -58,7 +61,7 @@ def _encode(py):
     if py[:3] == 'hmg':
         return lts[py]
 
-    print(py)
+    #print(py)
     tone = py[-1]
     py = py[:-1]
     # 前两个字符可以直接匹配
@@ -91,7 +94,7 @@ def witherror(func):
 @witherror
 def ordlt(code):
     "Decode one letter's code"
-    print(code)
+    #print(code)
     # utf-8 letters
     if code.startswith('6'):
         r = chr(int(code[1:].replace('8', '0'), base=8))
@@ -104,10 +107,12 @@ def ordlt(code):
 
     # single letter(Eng letters)
     # 单个字母或者是单个拼音
-    tone = code[-1]
-    code = code[:-1]
     if len(code) == 2:
         return bletters[code]
+
+    # 将音调与拼音分离
+    tone = code[-1]
+    code = code[:-1]
 
     # 获取到所在的拼音表
     li = nums[int(code[0]) - 1]

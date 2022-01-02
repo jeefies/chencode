@@ -1,6 +1,6 @@
-import main
+import  main
 
-r = main.encode('anjhikj jhjk')
+r = main.encode('some hello')
 print(r)
 print(main.decode(r))
 
