@@ -45,7 +45,8 @@ def _encode(py):
     punc = punctuation(py)
     # 符号以6开头
     if isinstance(punc, int):
-        r = '6{:o}'.format(punc).replace('0', '8')
+        # use base 7 to avoid 8 appear
+        r = '6{}'.format(_basechange(punc)).replace('0', '7')
         return r
 
     # 如果为数字，则直接返回数字
@@ -97,7 +98,7 @@ def ordlt(code):
     #print(code)
     # utf-8 letters
     if code.startswith('6'):
-        r = chr(int(code[1:].replace('8', '0'), base=8))
+        r = chr(int(code[1:].replace('7', '0'), base=7))
         return r
 
     # single number
@@ -141,6 +142,91 @@ def decode(codes):
             " similar words from the origin sentence\n"
             "Such as lower cases, and pinyin of the Ch words"
             )
-    return tuple(ordlt(code) for code in codes.split('0'))
+    return tuple(ordlt(code) for code in codes.split('0') if code)
 
 class DecodeError(Exception): pass
+
+def to_imdata_pixels(codes):
+    import math
+    try:
+        from imdata import ImData
+    except ImportError as e:
+        print("You must make sure you have installed imdata from pip first!")
+        raise e
+
+    try:
+        import numpy as np
+    except ImportError as e:
+        print("How can you install imdata without numpy installed?")
+        raise e
+
+    length = len(codes) # length of code
+    pixel_rbgs = math.ceil(length / 8) # length of used pixels, exclude chunk data
+    content_length = pixel_rbgs  * 3 + 5 # with chunk data
+
+    size = ImData._autosize(content_length) # img size
+    imdata_length = ImData._size(size) # number of all pixels (empty pixels included)
+    print(length, pixel_rbgs, content_length, imdata_length, size)
+
+    im = np.zeros(imdata_length, dtype="uint8")
+    im[0] = 3
+    for i in range(4):
+        im[i + 1] = len(codes) & (0xff << (i * 8))
+
+    full_pixels = length // 8 # each pixel has 3 uint8 number
+    rest_pixels = length % 8
+    print(full_pixels, rest_pixels)
+    for i in range(full_pixels):
+        code = int(codes[i * 8 : i * 8 + 8], base=8)
+        a, b, c = code & 0xff0000, code & 0x00ff00, code & 0x0000ff
+        a = a >> 16
+        b = b >> 8
+        index = 5 + i * 3
+        im[index : index + 3] = np.array([a, b, c], dtype='uint8')
+    else:
+        if rest_pixels:
+            i += 1
+            code = int(codes[i * 8 : i * 8 + rest_pixels], base=8)
+            a, b, c = code & 0xff0000, code & 0x00ff00, code & 0x0000ff
+            index = 5 + i * 3
+            im[index : index + 3] = np.array([a >> 16, b >> 8, c], dtype="uint8")
+
+    return im.reshape(size)
+
+def origin_imdata_pixels(im):
+    im  = im.reshape(-1)
+    imtype = im[0]
+    if imtype != 3:
+        raise TypeError("Not right chencode imdata!")
+
+    length = 0
+    for i in range(4):
+        length |= im[i + 1] << (i * 8)
+
+    codes = ''
+
+    full_pixels = length // 8
+    rest_pixels = length % 8
+    for i in range(full_pixels):
+        index = 5 + i * 3
+        a, b, c = im[index : index + 3]
+        num = (a << 16) | (b << 8) | c
+        for i in range(8):
+            codes += digits[( num >> (24 - 3 - i * 3) ) & 0b111 ]
+
+    print(codes, full_pixels, rest_pixels)
+
+    return codes
+
+
+def _basechange(n, x=7):
+    #n为待转换的十进制数，x为进制，取值为2-16
+    a = '0123456789ABCDEF'
+    b = ''
+    while True:
+        y = n % x  # 余数
+        n = n // x  # 商
+        b = a[y] + b
+        if n == 0:
+            break
+    return b
