@@ -41,6 +41,7 @@ def _encode(py):
     "Encode one letter which has changed to pinyin already"
     # 编码一个字符，产生一个8进制数，此种，8为0
     py = py.lower()
+    # print(py)
     e = ''
     punc = punctuation(py)
     # 符号以6开头
@@ -62,9 +63,13 @@ def _encode(py):
     if py[:3] == 'hmg':
         return lts[py]
 
-    #print(py)
+    # 有可能没有音调
     tone = py[-1]
-    py = py[:-1]
+    if tone in digits:
+        py = py[:-1]
+    else:
+        tone = '5'
+
     # 前两个字符可以直接匹配
     if len(py) == 2:
         return lts[py] + tone
@@ -92,10 +97,10 @@ def witherror(func):
             raise DecodeError("Error When Decoding %s" % code, code)
     return wrapper
 
-@witherror
+# @witherror
 def ordlt(code):
     "Decode one letter's code"
-    #print(code)
+    # print(code)
     # utf-8 letters
     if code.startswith('6'):
         r = chr(int(code[1:].replace('7', '0'), base=7))
@@ -113,13 +118,17 @@ def ordlt(code):
 
     # 将音调与拼音分离
     tone = code[-1]
+    if tone == '5':
+        tone = ''
     code = code[:-1]
 
     # 获取到所在的拼音表
     li = nums[int(code[0]) - 1]
+    # print(li)
     # 归递获取前两位拼音
     for c in code[1:3]:
         li = li[int(c) - 1]
+        # print(li)
     ft = li
 
     # 若是只有两个，则直接返回
@@ -142,7 +151,9 @@ def decode(codes):
             " similar words from the origin sentence\n"
             "Such as lower cases, and pinyin of the Ch words"
             )
-    return tuple(ordlt(code) for code in codes.split('0') if code)
+    result = tuple(ordlt(code) for code in codes.split('0') if code)
+    # print(result)
+    return result
 
 class DecodeError(Exception): pass
 
@@ -166,7 +177,7 @@ def to_imdata_pixels(codes):
 
     size = ImData._autosize(content_length) # img size
     imdata_length = ImData._size(size) # number of all pixels (empty pixels included)
-    print(length, pixel_rbgs, content_length, imdata_length, size)
+    # print(length, pixel_rbgs, content_length, imdata_length, size)
 
     im = np.zeros(imdata_length, dtype="uint8")
     im[0] = 3
@@ -175,7 +186,7 @@ def to_imdata_pixels(codes):
 
     full_pixels = length // 8 # each pixel has 3 uint8 number
     rest_pixels = length % 8
-    print(full_pixels, rest_pixels)
+    # print(full_pixels, rest_pixels)
     for i in range(full_pixels):
         code = int(codes[i * 8 : i * 8 + 8], base=8)
         a, b, c = code & 0xff0000, code & 0x00ff00, code & 0x0000ff
@@ -214,7 +225,7 @@ def origin_imdata_pixels(im):
         for i in range(8):
             codes += digits[( num >> (24 - 3 - i * 3) ) & 0b111 ]
 
-    print(codes, full_pixels, rest_pixels)
+    # print(codes, full_pixels, rest_pixels)
 
     return codes
 
