@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chencode"
+version = "0.0.1"
+authors = [
+  { name="Jeefy", email="jeefy163@163.com" },
+]
+description = 'A easy method to encrypt/decrypt chinese letters based on thier PinYin'
+readme = "README.md"
+# license = { file="LICENSE" }
+requires-python = ">=3.5"
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dependencies = ['pypinyin']
+
+[project.urls]
+"Homepage" = "https://github.com/jeefies/chencode"
+"Bug Tracker" = "https://github.com/jeefies/chencode/issues"

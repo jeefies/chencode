@@ -4,3 +4,7 @@ waste
 *.swp
 *.swo
 *.bz2
+
+dist
+build
+*.egg-info

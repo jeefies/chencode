@@ -1,2 +1,2 @@
-from .main import (encode, decode,
+from .chencode import (encode, decode,
         chrlt, ordlt, DecodeError)
